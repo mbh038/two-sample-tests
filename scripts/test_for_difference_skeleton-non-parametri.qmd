@@ -1,0 +1,71 @@
+---
+title: "Test for difference: two levels, non parametric"
+author: "your name"
+date: "the date"
+format: html
+editor: visual
+---
+
+This script uses the non-parametric Mann-Whitney U / Wilcoxon test for a difference.
+
+# Background
+
+The student wished to assess peoples’ sense of wellbeing using two different sets of questions designed to assess this. The scales chosen were the Warwick–Edinburgh Mental Well-being Scale (WEMWBS) and the New Ecological Paradigm (NEP) Scale. The student wished in particular to determine whether this sense of well-being was affected by whether a person often and actively frequented the coast and made it and the sea a substantive part of their life in one way or another. ie to find out whether there was evidence to support the notion that it could be good for your mental wellbeing to be by the sea and to make it part of your life.
+
+Each scale used consists of 15 questions or ‘Likert items’, each of which is answered on a 5 point ordinal scale, where a score of 1 indicates lowest wellbeing and a score of 5 indicates highest wellbeing. Thus each respondent could score anything from 15 to 75.
+
+The student got responses from 374 people, 86 of whom were not “marine” users, while the other 288 say that they were marine users. The total scores from each respondent were recorded for each type of survey and stored in the file wellness.csv which needs to be in the data subfolder of your R project folder.
+
+```{r, include = FALSE}
+# This chunk makes the rendered version look prettier
+# it supresses warnings and other messages
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+
+### Load packages
+```{r}
+library(tidyverse)
+library(here)
+```
+
+### Load data
+```{r}
+filepath<-here("data","wellness.csv")
+wellness<-read_csv(filepath)
+glimpse(wellness)
+```
+
+### Summarise data
+```{r}
+wellness |>
+  group_by(scale,marine) |>
+  summarise(median.score=median(total_score),
+            iqr_25=quantile(total_score,0.25),
+            iqr_75=quantile(total_score,0.75))
+```
+
+### Plot data
+```{r}
+wellness |>
+  ggplot(aes(x = scale,y = total_score,fill=marine)) +
+  geom_boxplot() +
+  labs(x = "Likert Scale",
+       y = "Wellbeing Score") +
+  theme_classic()
+```
+
+
+### Test for a difference
+
+#### First for the WEMWBS scores
+```{r}
+WEMWBS<-wellness |> filter(scale=="WEMWBS")
+wilcox.test(total_score~marine,data=WEMWBS)
+```
+
+#### then for the nep scores
+```{r}
+nep<-wellness |> filter(scale=="nep")
+wilcox.test(total_score~marine,data=nep)
+```

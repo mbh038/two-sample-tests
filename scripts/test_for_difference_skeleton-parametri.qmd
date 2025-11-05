@@ -1,0 +1,102 @@
+---
+title: "Test for difference - two levels, parametric"
+author: "your name"
+date: "the date"
+format: html
+editor: visual
+---
+
+This uses the parametric t-test for a difference between two samples that each have independent replicates. You could easily adapt this script to your data.
+
+In our example we will consider concentrations of airborne ozone (O~3~) at ground level, as measured in gardens around a city. This is of interest because ozone levels can affect how well crops grow, and can impact on human health.
+
+We have measurements of airborne ozone levels in ppb taken at two samples of locations in the city: some randomly selected from among gardens in the eastern residential sector and some randomly selected from among gardens in the western sector, close to a zone of heavy industry.
+
+Our question is:
+
+*Is there evidence for a difference between airborne ozone concentrations in the east and the west of the city?*
+
+From which our null hypothesis is:
+
+*There is no difference between airborne ozone concentrations in the east and the west of the city.*
+
+and our alternate, two-sided hypothesis is:
+
+*There is a difference between airborne ozone concentrations in the east and the west of the city.*
+
+### load the packages we need
+
+```{r}
+library(tidyverse)
+library(here)
+```
+
+### load the data
+
+This data set is saved as a .csv file, so we use the `read_csv()` function to open it.
+
+```{r}
+filepath <- here("data","ozone.csv")
+ozone<-read_csv(filepath)
+glimpse(ozone)
+```
+
+### summarise the data
+
+```{r}
+ozone.summary<-ozone |>
+group_by(garden.location) |>
+summarise(n = n(),
+          mean.ozone = mean(ozone),
+          se.ozone = sd(ozone)/sqrt(n()))
+ozone.summary
+```
+
+### plot histograms for each location
+
+```{r}
+ozone |>
+ggplot(aes(x=ozone))+
+  geom_histogram(binwidth=10,fill="darkred")+
+  facet_wrap(~garden.location,ncol=1) +
+  theme_classic()
+```
+
+### plot box plot for the two locations
+
+```{r}
+ozone |>
+  ggplot(aes(x=garden.location,y=ozone))+
+  geom_boxplot()+
+  labs(x="Garden Location",
+       y="Ozone concentration (ppb)") +
+  theme_classic()
+
+```
+
+# are the ozone levels in each location normally distributed?
+
+```{r}
+ozone |>
+  group_by(garden.location) |>
+  summarise(sw=shapiro.test(ozone)$p.value)
+```
+
+### graphical check for normality:
+
+#### quantile-quantile plots for ozone levels in each location
+
+```{r}
+ozone |>
+  ggplot(aes(sample=ozone)) +
+  stat_qq(colour="blue") +
+  stat_qq_line() +
+  facet_wrap(~garden.location) +
+  theme_classic()
+```
+
+### and finally, the actual *t*-test
+
+```{r}
+t.test(ozone~garden.location,data=ozone)
+```
